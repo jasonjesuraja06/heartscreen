@@ -135,12 +135,16 @@ def train_fold(
     cfg: Config,
     train_signals: list[np.ndarray],
     y_train: np.ndarray,
-    val_signals: list[np.ndarray],
-    y_val: np.ndarray,
+    val_signals: list[np.ndarray] | None,
+    y_val: np.ndarray | None,
     out_dir: str | Path,
-    metric,
+    metric=None,
 ) -> dict:
-    """Train one fold and return final params, val logits, and per-epoch history."""
+    """Train one fold and return final params, val logits, and per-epoch history.
+
+    With val_signals None (deployment training on all records) only the train
+    loss is logged and val_logits is None.
+    """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     model = build_model(cfg)
@@ -169,8 +173,11 @@ def train_fold(
                 state, loss = train_step(state, x, mask, y)
                 losses.append(loss)
             train_loss = float(np.mean(jax.device_get(losses)))
-            val_logits = predict_logits(eval_step, state.params, val_signals, cfg)
-            val_f1 = metric(y_val, val_logits.argmax(1))
+            if val_signals is None:
+                val_f1 = float("nan")
+            else:
+                val_logits = predict_logits(eval_step, state.params, val_signals, cfg)
+                val_f1 = metric(y_val, val_logits.argmax(1))
             seconds = time.perf_counter() - start
             history.append(
                 {"epoch": epoch, "train_loss": train_loss, "val_f1": val_f1, "seconds": seconds}
@@ -179,7 +186,9 @@ def train_fold(
             f.flush()
 
     (out_dir / "params.msgpack").write_bytes(serialization.to_bytes(state.params))
-    val_logits = predict_logits(eval_step, state.params, val_signals, cfg)
+    val_logits = (
+        None if val_signals is None else predict_logits(eval_step, state.params, val_signals, cfg)
+    )
     return {"params": state.params, "val_logits": val_logits, "history": history}
 
 
@@ -190,3 +199,26 @@ def load_params(cfg: Config, path: str | Path):
         jax.random.key(0), jnp.zeros((1, cfg.window, 1)), jnp.ones((1, cfg.window))
     )["params"]
     return serialization.from_bytes(template, Path(path).read_bytes())
+
+
+def main() -> None:
+    """Train the deployment model on every record for use by the screening pipeline."""
+    import argparse
+
+    from heartscreen.data import CachedDataset
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="configs/default.yaml")
+    parser.add_argument("--out-dir", default="results/full")
+    args = parser.parse_args()
+
+    cfg = load_config(args.config)
+    dataset = CachedDataset(cfg.cache)
+    signals = [dataset.signal(i) for i in range(len(dataset))]
+    result = train_fold(cfg, signals, dataset.labels, None, None, args.out_dir)
+    final = result["history"][-1]
+    print(f"final train loss {final['train_loss']:.4f} ({final['seconds']:.0f}s/epoch)")
+
+
+if __name__ == "__main__":
+    main()
