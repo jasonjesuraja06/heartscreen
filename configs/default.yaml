@@ -4,7 +4,7 @@ cache: data/cache/cinc2017.npz
 out_dir: results/cv
 window_seconds: 30
 batch_size: 64
-epochs: 30
+epochs: 60
 lr: 3.0e-3
 weight_decay: 1.0e-4
 warmup_epochs: 2
