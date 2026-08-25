@@ -1,0 +1,16 @@
+seed: 42
+data_dir: data/cinc2017
+cache: data/cache/cinc2017.npz
+out_dir: results/smoke
+window_seconds: 30
+batch_size: 32
+epochs: 2
+lr: 3.0e-3
+weight_decay: 1.0e-4
+warmup_epochs: 1
+widths: [32, 64, 96, 128]
+blocks_per_stage: 2
+kernel: 7
+folds: 2
+max_eval_crops: 3
+limit_records: 200
