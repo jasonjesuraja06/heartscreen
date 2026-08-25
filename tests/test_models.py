@@ -58,3 +58,22 @@ def test_padding_in_batch_does_not_change_logits():
         np.stack([np.ones(1024, np.float32), short_mask]),
     )
     np.testing.assert_allclose(alone[0], batched[0], atol=1e-5)
+
+
+def test_pad_amount_does_not_change_logits():
+    # A short record must get the same logits whether its window carries a
+    # little padding or a lot; plain GroupNorm fails this because padding
+    # would enter the normalization statistics.
+    model = ECGResNet(widths=(8, 16), blocks_per_stage=1)
+    rng = np.random.default_rng(1)
+    signal = rng.normal(size=300).astype(np.float32)
+
+    def run(window_len, params):
+        x = np.zeros((1, window_len, 1), np.float32)
+        x[0, :300, 0] = signal
+        mask = np.zeros((1, window_len), np.float32)
+        mask[0, :300] = 1
+        return model.apply({"params": params}, x, mask)[0]
+
+    params = init_params(model, length=512)
+    np.testing.assert_allclose(run(512, params), run(2048, params), atol=1e-4)

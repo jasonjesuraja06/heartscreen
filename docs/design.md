@@ -47,14 +47,19 @@ The size is a deliberate CPU budget decision: this machine has no CUDA GPU, and
 at about 820k parameters a full 5-fold cross-validation run fits in a few hours
 while staying far from the regime where 8,528 training records overfit badly.
 
-GroupNorm is used instead of BatchNorm. Its statistics are per-sample, which
-makes a record's logits independent of how much padding its batch neighbors
-carry (unit-tested), removes train/eval statistics handling, and keeps
-inference deterministic. Padding is always on the right and SAME convolutions
-use ceil division of lengths, so a sample with v valid input steps has exactly
-ceil(v / 32) valid output steps; the global average pool masks positions beyond
-that. GroupNorm itself still sees padded zeros for short records; the effect is
-limited because 11% of records are shorter than 30 s.
+Normalization is a mask-aware GroupNorm. Group statistics are per-sample,
+which makes a record's logits independent of how much padding its batch
+neighbors carry, removes train/eval statistics handling, and keeps inference
+deterministic. Plain GroupNorm would still fold a sample's own padded zeros
+into its time-axis statistics, rescaling the 11% of records shorter than 30 s
+by their pad fraction (measured logit shifts above 1.0 for a 9 s record), so
+statistics are computed over valid positions only and padded positions are
+re-zeroed after every normalization. Padding is always on the right and SAME
+convolutions use ceil division of lengths, so a sample with v valid input
+steps has exactly ceil(v / 32) valid output steps; valid lengths are tracked
+through every stride-2 op and the global average pool masks positions beyond
+them. Both properties are unit-tested: logits are invariant to batch
+neighbors' padding and to the amount of padding in the sample's own window.
 
 ## Training
 

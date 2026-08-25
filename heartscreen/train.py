@@ -149,6 +149,11 @@ def train_fold(
     out_dir.mkdir(parents=True, exist_ok=True)
     model = build_model(cfg)
     steps_per_epoch = len(train_signals) // cfg.batch_size
+    if steps_per_epoch < 1:
+        raise ValueError(
+            f"training split ({len(train_signals)} records) is smaller than "
+            f"batch_size ({cfg.batch_size})"
+        )
     state = create_state(cfg, model, steps_per_epoch)
     train_step, eval_step = make_steps(model.apply, class_weights(y_train))
     rng = np.random.default_rng(cfg.seed)
