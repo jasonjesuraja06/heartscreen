@@ -39,8 +39,10 @@ def main() -> None:
     per_record = jit_time / cfg.batch_size
     print(f"jit step: {jit_time * 1000:.1f} ms  eager step: {eager_time * 1000:.1f} ms")
     print(f"speedup: {eager_time / jit_time:.1f}x")
-    print(f"training throughput: {cfg.batch_size / jit_time:.0f} windows/s "
-          f"({per_record * 1000:.2f} ms per 30 s window)")
+    print(
+        f"training throughput: {cfg.batch_size / jit_time:.0f} windows/s "
+        f"({per_record * 1000:.2f} ms per 30 s window)"
+    )
 
 
 if __name__ == "__main__":

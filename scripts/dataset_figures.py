@@ -20,9 +20,7 @@ FIG_DIR = ROOT / "docs" / "figures"
 
 def main() -> None:
     records, labels = load_reference(DATA_DIR)
-    lengths = np.array(
-        [wfdb.rdheader(str(DATA_DIR / "training2017" / r)).sig_len for r in records]
-    )
+    lengths = np.array([wfdb.rdheader(str(DATA_DIR / "training2017" / r)).sig_len for r in records])
     seconds = lengths / FS
     counts = np.bincount(labels, minlength=4)
 
