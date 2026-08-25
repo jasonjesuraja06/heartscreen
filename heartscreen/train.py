@@ -51,7 +51,7 @@ def load_config(path: str | Path) -> Config:
 
 
 def class_weights(labels: np.ndarray, num_classes: int = 4) -> np.ndarray:
-    """Inverse-frequency weights normalized to mean 1 over the given labels."""
+    """Inverse-frequency weights scaled so the mean weight over samples is 1."""
     counts = np.bincount(labels, minlength=num_classes).astype(np.float64)
     return (len(labels) / (num_classes * np.maximum(counts, 1))).astype(np.float32)
 
