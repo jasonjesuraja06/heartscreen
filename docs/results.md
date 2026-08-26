@@ -1,8 +1,7 @@
 # Results
 
 All numbers were produced by the commands shown, on an Apple M4 Pro (14-core
-CPU, 48 GB RAM, no GPU, JAX CPU backend), with seed 42. TBD marks a run that
-has not completed yet.
+CPU, 48 GB RAM, no GPU, JAX CPU backend), with seed 42.
 
 ## Cross-validation
 
@@ -71,8 +70,8 @@ Single Lead ECG Recording: the PhysioNet/Computing in Cardiology Challenge
 ## Screening on the MIT-BIH Long-Term AF Database
 
 The deployment model (trained on all 8,528 records with the CV-validated
-recipe) scans 84 Holter recordings of 24 to 25 hours, resampled from 128 Hz
-to 300 Hz, with a 30 s window and 15 s stride.
+recipe) scans 84 Holter recordings of 6.1 to 26.4 hours (mean 23.3, median
+24.0), resampled from 128 Hz to 300 Hz, with a 30 s window and 15 s stride.
 
 ```
 uv run python -m heartscreen.train --config configs/default.yaml
@@ -85,15 +84,21 @@ uv run python -m heartscreen.screening
 | End-to-end wall clock | 15.5 min (126.7 recording-hours/min) |
 | Candidate episodes | 6,803 |
 | Candidates passing vetting | 5,842 (85.9%) |
-| Windows scored against annotations | 470,460 |
+| Windows scored against annotations | 470,460 (52.7% annotated AF) |
 | Window-level sensitivity | 0.921 |
 | Window-level specificity | 0.963 |
 | Window-level PPV | 0.965 |
+| Vetted candidates majority-AF by annotation | 75.6% |
+| Vetted candidates overlapping any annotated AF | 78.1% |
 
 Window-level truth is at least half the window annotated AFIB or AFL; a
-window predicts AF when its argmax class is A. The classifier was trained on
-300 Hz AliveCor snippets and applied to resampled 128 Hz Holter telemetry,
-a real domain shift; the numbers above include it.
+window predicts AF when its argmax class is A. Three caveats frame these
+numbers. LTAF is an AF-enriched cohort (52.7% of scored windows are AF), so
+the PPV does not transfer to low-prevalence screening populations. Adjacent
+windows overlap by 15 s, so the 470,460 window scores are correlated and the
+effective sample size is smaller. And the classifier was trained on 300 Hz
+AliveCor snippets and applied to resampled 128 Hz Holter telemetry, a real
+domain shift the numbers include.
 
 ![top candidates](figures/top_candidates.png)
 
@@ -106,6 +111,6 @@ a real domain shift; the numbers above include it.
 | Train step, eager, batch 64 | 719.8 ms | `uv run python scripts/bench_jit.py` |
 | jit speedup | 1.6x | same |
 | Training throughput | 140 windows/s | same |
-| Epoch, 6,822 train records | 51.6 s mean over 60 | results/cv/fold0/log.csv |
+| Epoch, 6,822 train records | 51.6 s mean over 60 | CV run, written to results/cv/fold0/log.csv |
 | Smoke run, end to end | 10.2 s | `time uv run python -m heartscreen.evaluate --smoke` |
-| Deployment model, 8,528 records, 60 epochs | 62 min (62 s/epoch) | `uv run python -m heartscreen.train` |
+| Deployment model, 8,528 records, 60 epochs | 61.4 min (61.4 s/epoch mean) | `uv run python -m heartscreen.train` |

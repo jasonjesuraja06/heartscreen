@@ -30,8 +30,9 @@ Screening the MIT-BIH Long-Term AF Database (84 recordings, 1,961
 recording-hours) runs end to end in 15.5 min on the same CPU (126.7
 recording-hours/min) and agrees with the rhythm annotations at window level
 with sensitivity 0.921, specificity 0.963, and PPV 0.965 across 470,460
-windows. Full tables, figures, and reproduction commands:
-[docs/results.md](docs/results.md).
+windows, of which 52.7% are annotated AF; PPV in an AF-enriched cohort does
+not transfer to low-prevalence populations. Full tables, figures, and
+reproduction commands: [docs/results.md](docs/results.md).
 
 ## Quickstart
 
@@ -73,9 +74,11 @@ stratified 5-fold cross-validation on the public training set with a fixed
 seed; published hidden-test scores from challenge entries are cited in
 docs/results.md as context and are not directly comparable. Each fold's
 final-epoch model is evaluated, with no early stopping or model selection on
-the validation fold. Screening agreement on LTAF is measured under a real
-domain shift (128 Hz Holter telemetry resampled to 300 Hz) and the vetting
-thresholds are ranking heuristics, not diagnostic rules.
+the validation fold. Folds split records; patient identities are not
+published for this dataset, so patient-level splitting is not possible.
+Screening agreement on LTAF is measured under a real domain shift (128 Hz
+Holter telemetry resampled to 300 Hz) and the vetting thresholds are ranking
+heuristics, not diagnostic rules.
 
 HeartScreen is a research prototype and is not a medical device.
 

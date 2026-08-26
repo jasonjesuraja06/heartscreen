@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Download the MIT-BIH Long-Term AF Database (84 records, 24 to 25 hours each,
+# Download the MIT-BIH Long-Term AF Database (84 records, 6 to 26 hours each,
 # 128 Hz, rhythm-annotated) into data/ltafdb/.
 set -euo pipefail
 

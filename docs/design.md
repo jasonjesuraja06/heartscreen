@@ -74,8 +74,8 @@ contains inverted records.
 
 Train and eval steps are jit-compiled. The eval path pads the final partial
 batch to the training batch shape so XLA compiles exactly one program per
-shape. The measured step-level speedup of jit over eager on this CPU is 1.9x
-(380 ms vs 704 ms per 64-window step).
+shape. The measured step-level speedup of jit over eager on this CPU is 1.6x
+(456 ms vs 720 ms per 64-window step).
 
 Each fold trains for a fixed 60 epochs and the final-epoch model is evaluated.
 No early stopping or best-epoch selection is done on the validation fold, so
@@ -94,9 +94,10 @@ only; they are not directly comparable to cross-validation on the training set.
 
 ## Screening pipeline
 
-Long recordings (MIT-BIH Long-Term AF Database, 84 Holter records of 24 to
-25 hours at 128 Hz) are resampled to 300 Hz, bandpassed once, and scanned by
-the classifier over 30 s windows with a 15 s stride, z-scoring each window.
+Long recordings (MIT-BIH Long-Term AF Database, 84 Holter records at 128 Hz,
+6 to 26 hours each with a mean of 23.3 h) are resampled to 300 Hz, bandpassed
+once, and scanned by the classifier over 30 s windows with a 15 s stride,
+z-scoring each window.
 Consecutive windows with AF probability at or above 0.5 merge into candidate
 episodes ranked by mean probability.
 

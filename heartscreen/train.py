@@ -210,7 +210,7 @@ def main() -> None:
     """Train the deployment model on every record for use by the screening pipeline."""
     import argparse
 
-    from heartscreen.data import CachedDataset
+    from heartscreen.data import CachedDataset, build_cache
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/default.yaml")
@@ -218,7 +218,11 @@ def main() -> None:
     args = parser.parse_args()
 
     cfg = load_config(args.config)
-    dataset = CachedDataset(cfg.cache)
+    cache = Path(cfg.cache)
+    if not cache.exists():
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        build_cache(cfg.data_dir, cache)
+    dataset = CachedDataset(cache)
     signals = [dataset.signal(i) for i in range(len(dataset))]
     result = train_fold(cfg, signals, dataset.labels, None, None, args.out_dir)
     final = result["history"][-1]
