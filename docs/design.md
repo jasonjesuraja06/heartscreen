@@ -67,10 +67,14 @@ AdamW with a cosine schedule (2 warmup epochs) and weight decay 1e-4, batch
 size 64. The loss is cross-entropy weighted by inverse class frequency, scaled
 so the mean weight over training samples is 1 (weights 0.42 / 2.81 / 0.88 /
 7.64 for N / A / O / ~ at the observed distribution); without it the 8.9% AF
-class is underserved by an optimizer that can buy accuracy cheaply on Normal. Augmentation: random crop,
-amplitude scaling in [0.8, 1.2], and random polarity flip, the last because
-the recording device is held in either hand and the training set genuinely
-contains inverted records.
+class is underserved by an optimizer that can buy accuracy cheaply on Normal.
+
+Augmentation: random crop, amplitude scaling in [0.8, 1.2], and random
+polarity flip, the last because the recording device is held in either hand
+and the training set genuinely contains inverted records. The scale term is
+mostly absorbed downstream, since the masked normalization is scale invariant
+per sample; it survives only through convolution biases, and it stays in the
+recipe because the reported runs used it.
 
 Train and eval steps are jit-compiled. The eval path pads the final partial
 batch to the training batch shape so XLA compiles exactly one program per
@@ -106,17 +110,19 @@ R-peak detection runs only on one representative window per candidate episode.
 Vetting evidence per candidate: flatline fraction and 5 to 25 Hz spectral power
 ratio (signal quality), beat count plausibility, and RR irregularity
 (coefficient of variation of RR, RMSSD). A candidate passes vetting when the
-signal is usable and CV(RR) is at least 0.10; on CinC records this separates
-AF (measured example: 0.19) from sinus rhythm (0.04) by a wide margin. The
-thresholds are screening heuristics meant to rank and annotate candidates for
-human review, not diagnostic rules.
+signal is usable and CV(RR) is at least 0.10. Across 150 sampled records per
+class from CinC 2017, median CV(RR) is 0.207 for AF (interquartile range
+0.156 to 0.280) versus 0.059 for Normal (0.027 to 0.151); the 0.10 gate sits
+between the medians, but the interquartile ranges overlap, so it is a coarse
+filter that trades some AF recall for fewer false alarms, not a classifier.
+The thresholds are screening heuristics meant to rank and annotate candidates
+for human review, not diagnostic rules.
 
 Where rhythm annotations exist, window-level agreement is reported: a window
 counts as AF truth when at least half of it is annotated AFIB or AFL, and as an
 AF prediction when the argmax class is A. The classifier is trained on 30 s
-AliveCor snippets and applied to Holter telemetry resampled from 128 Hz, a real
-domain shift; agreement numbers are reported under that caveat rather than
-tuned away.
+AliveCor snippets and applied to Holter telemetry resampled from 128 Hz, so
+the agreement absorbs a domain gap rather than tuning it away.
 
 The deployment model used for screening is trained on all 8,528 records with
 the CV-validated recipe; its expected quality is the CV estimate.

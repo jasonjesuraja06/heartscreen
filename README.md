@@ -8,11 +8,11 @@ pipeline that ranks candidate AF episodes in multi-hour recordings.
 
 Atrial fibrillation is intermittent and often asymptomatic, so it is missed by
 spot checks and found by long-duration monitoring, which produces far more
-signal than anyone reads by hand. HeartScreen trains a compact classifier
-(821k parameters) on labeled 30 s single-lead records, then uses it as the
-cheap first tier of a screening stack: sliding-window inference over long
-recordings, followed by signal-quality and RR-irregularity vetting of
-candidates via R-peak detection, yielding a ranked list a human can review.
+signal than anyone reads by hand. HeartScreen trains a compact
+821k-parameter classifier on labeled 30 s single-lead records and makes it
+the cheap first tier of a screening stack. The model scans a long recording
+window by window, R-peak and signal-quality checks vet whatever it flags,
+and the survivors reach a human as a ranked candidate list.
 
 ## Results
 
@@ -24,17 +24,29 @@ protocol notes below.
 | Metric | Value |
 |---|---|
 | Mean CV challenge F1 | 0.827 +/- 0.008 |
-| Pooled per-class F1 (N / A / O / ~) | 0.903 / 0.810 / 0.768 / 0.614 |
+| Per-class F1, Normal / AF / Other / Noisy | 0.903 / 0.810 / 0.768 / 0.614 |
+| RR-feature logistic regression baseline | 0.547 +/- 0.022 |
 | Model size | 821,348 parameters |
 | Training throughput (M4 Pro CPU) | 140 windows/s |
 
-Screening the MIT-BIH Long-Term AF Database (84 recordings, 1,961
-recording-hours) runs end to end in 15.5 min on the same CPU (126.7
-recording-hours/min) and agrees with the rhythm annotations at window level
-with sensitivity 0.921, specificity 0.963, and PPV 0.965 across 470,460
-windows, of which 52.7% are annotated AF; PPV in an AF-enriched cohort does
-not transfer to low-prevalence populations. Full tables, figures, and
-reproduction commands: [docs/results.md](docs/results.md).
+For context, the four winning 2017 entries scored 0.83 on the withheld test
+set, a protocol not directly comparable to cross-validation; the baseline row
+shows what the screening pipeline's own hand-built rhythm features achieve
+under the identical protocol. Details in [docs/results.md](docs/results.md).
+
+Screening the MIT-BIH Long-Term AF Database with the deployment model, on
+the same CPU:
+
+| Metric | Value |
+|---|---|
+| Recording-hours screened | 1,961 (84 Holter recordings) |
+| End-to-end wall clock | 15.3 min (127.8 recording-hours/min) |
+| Window-level sensitivity / specificity | 0.921 / 0.963 |
+| Windows scored | 470,460 (52.7% annotated AF) |
+
+PPV is 0.965, but the cohort is AF-enriched, so it does not transfer to
+low-prevalence populations. Full tables, figures, and reproduction commands:
+[docs/results.md](docs/results.md).
 
 Top-ranked candidate episodes from the screening run, with detected R-peaks
 and per-episode vetting evidence:
@@ -86,9 +98,9 @@ docs/results.md as context and are not directly comparable. Each fold's
 final-epoch model is evaluated, with no early stopping or model selection on
 the validation fold. Folds split records; patient identities are not
 published for this dataset, so patient-level splitting is not possible.
-Screening agreement on LTAF is measured under a real domain shift (128 Hz
-Holter telemetry resampled to 300 Hz) and the vetting thresholds are ranking
-heuristics, not diagnostic rules.
+Screening agreement on LTAF is measured across an acquisition mismatch the
+model never saw in training (128 Hz Holter telemetry resampled to 300 Hz)
+and the vetting thresholds are ranking heuristics, not diagnostic rules.
 
 HeartScreen is a research prototype and is not a medical device.
 

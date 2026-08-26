@@ -42,6 +42,19 @@ its errors are mostly absorbed into Normal; the class has only 279 records,
 so its F1 is high-variance and it is excluded from the challenge score by
 definition.
 
+## Baseline
+
+A logistic regression over the screening pipeline's own hand-built features
+(XQRS beat rate, CV(RR), RMSSD, flatline fraction, 5 to 25 Hz power ratio)
+under the identical folds and metric scores 0.547 +/- 0.022; mean per-class
+F1 is 0.82 / 0.42 / 0.40 / 0.34 for N / A / O / ~. Rhythm-irregularity
+features alone reach about half the network's AF F1, so most of the headline
+gap of 0.28 comes from learned morphology.
+
+```
+uv run python scripts/baseline_rr.py
+```
+
 ## Dataset
 
 | Class | Records | Share |
@@ -81,24 +94,24 @@ uv run python -m heartscreen.screening
 | Metric | Value |
 |---|---|
 | Recording-hours screened | 1,961 (84 records) |
-| End-to-end wall clock | 15.5 min (126.7 recording-hours/min) |
+| End-to-end wall clock | 15.3 min (127.8 recording-hours/min) |
 | Candidate episodes | 6,803 |
-| Candidates passing vetting | 5,842 (85.9%) |
+| Candidates passing vetting | 5,845 (85.9%) |
 | Windows scored against annotations | 470,460 (52.7% annotated AF) |
 | Window-level sensitivity | 0.921 |
 | Window-level specificity | 0.963 |
 | Window-level PPV | 0.965 |
-| Vetted candidates majority-AF by annotation | 75.6% |
-| Vetted candidates overlapping any annotated AF | 78.1% |
+| Vetted candidates majority-AF by annotation | 75.7% |
+| Vetted candidates overlapping any annotated AF | 78.3% |
 
 Window-level truth is at least half the window annotated AFIB or AFL; a
-window predicts AF when its argmax class is A. Three caveats frame these
-numbers. LTAF is an AF-enriched cohort (52.7% of scored windows are AF), so
-the PPV does not transfer to low-prevalence screening populations. Adjacent
-windows overlap by 15 s, so the 470,460 window scores are correlated and the
-effective sample size is smaller. And the classifier was trained on 300 Hz
-AliveCor snippets and applied to resampled 128 Hz Holter telemetry, a real
-domain shift the numbers include.
+window predicts AF when its argmax class is A. LTAF is an AF-enriched cohort
+(52.7% of scored windows are AF), so the PPV does not transfer to
+low-prevalence screening populations. Adjacent windows overlap by 15 s,
+which correlates the 470,460 window scores and shrinks the effective sample
+size. The classifier also never saw Holter data in training: it was fit on
+300 Hz AliveCor snippets and applied to 128 Hz telemetry resampled up, and
+the numbers absorb that mismatch.
 
 ![top candidates](figures/top_candidates.png)
 
