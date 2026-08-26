@@ -278,12 +278,18 @@ def plot_top_candidates(data_dir: Path, episodes: pd.DataFrame, path: Path, k: i
         rec = wfdb.rdrecord(str(data_dir / ep["record"]), channels=[0], sampfrom=start, sampto=stop)
         raw = np.nan_to_num(rec.p_signal[:, 0], nan=0.0)
         signal = sosfiltfilt(bandpass_sos(), resample_to_fs(raw, header.fs).astype(np.float64))
-        t = ep["start_s"] + np.arange(len(signal)) / FS
+        t = np.arange(len(signal)) / FS
         ax.plot(t, signal, lw=0.6, color="#20415e")
         peaks = processing.xqrs_detect(signal, fs=FS, verbose=False)
         ax.plot(t[peaks], signal[peaks], "r.", ms=4)
         ax.set_yticks([])
-        ax.set_ylabel(ep["record"], rotation=0, ha="right", va="center", fontsize=8)
+        ax.set_ylabel(
+            f"{ep['record']}\n{ep['start_s'] / 3600:.1f} h",
+            rotation=0,
+            ha="right",
+            va="center",
+            fontsize=8,
+        )
         ax.set_title(
             f"p_af {ep['mean_p_af']:.2f}  cv_rr {ep['cv_rr']:.2f}  "
             f"beats {ep['beats']:.0f}  vet {'pass' if ep['vet_pass'] else 'fail'}",

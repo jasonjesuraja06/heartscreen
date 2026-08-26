@@ -81,13 +81,14 @@ uv run python -m heartscreen.screening
 
 | Metric | Value |
 |---|---|
-| Recording-hours screened | TBD |
-| End-to-end throughput | TBD recording-hours/min |
-| Candidate episodes | TBD |
-| Candidates passing vetting | TBD |
-| Window-level sensitivity vs annotations | TBD |
-| Window-level specificity | TBD |
-| Window-level PPV | TBD |
+| Recording-hours screened | 1,961 (84 records) |
+| End-to-end wall clock | 15.5 min (126.7 recording-hours/min) |
+| Candidate episodes | 6,803 |
+| Candidates passing vetting | 5,842 (85.9%) |
+| Windows scored against annotations | 470,460 |
+| Window-level sensitivity | 0.921 |
+| Window-level specificity | 0.963 |
+| Window-level PPV | 0.965 |
 
 Window-level truth is at least half the window annotated AFIB or AFL; a
 window predicts AF when its argmax class is A. The classifier was trained on
@@ -106,4 +107,5 @@ a real domain shift; the numbers above include it.
 | jit speedup | 1.6x | same |
 | Training throughput | 140 windows/s | same |
 | Epoch, 6,822 train records | 51.6 s mean over 60 | results/cv/fold0/log.csv |
-| Smoke run, end to end | 8.5 s | `time uv run python -m heartscreen.evaluate --smoke` |
+| Smoke run, end to end | 10.2 s | `time uv run python -m heartscreen.evaluate --smoke` |
+| Deployment model, 8,528 records, 60 epochs | 62 min (62 s/epoch) | `uv run python -m heartscreen.train` |
