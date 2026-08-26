@@ -1,5 +1,7 @@
 # HeartScreen
 
+[![ci](https://github.com/jasonjesuraja06/heartscreen/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonjesuraja06/heartscreen/actions/workflows/ci.yml)
+
 Arrhythmia discovery engine for single-lead wearable ECG: a JAX/Flax residual
 CNN classifier for the PhysioNet/CinC 2017 task, wrapped in a screening
 pipeline that ranks candidate AF episodes in multi-hour recordings.
@@ -34,7 +36,15 @@ windows, of which 52.7% are annotated AF; PPV in an AF-enriched cohort does
 not transfer to low-prevalence populations. Full tables, figures, and
 reproduction commands: [docs/results.md](docs/results.md).
 
+Top-ranked candidate episodes from the screening run, with detected R-peaks
+and per-episode vetting evidence:
+
+![top screening candidates](docs/figures/top_candidates.png)
+
 ## Quickstart
+
+Requires [uv](https://docs.astral.sh/uv/); it installs the pinned Python
+interpreter and locked dependencies.
 
 ```
 uv sync
