@@ -43,6 +43,7 @@ the same CPU:
 | End-to-end wall clock | 15.3 min (127.8 recording-hours/min) |
 | Window-level sensitivity / specificity | 0.921 / 0.963 |
 | Windows scored | 470,460 (52.7% annotated AF) |
+| Healthy-cohort false alarms (NSRDB, 18 subjects) | 0.9 vetted candidates per patient-day |
 
 PPV is 0.965, but the cohort is AF-enriched, so it does not transfer to
 low-prevalence populations. Full tables, figures, and reproduction commands:

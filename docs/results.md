@@ -115,6 +115,19 @@ the numbers absorb that mismatch.
 
 ![top candidates](figures/top_candidates.png)
 
+## Healthy-cohort false alarms
+
+The same pipeline over the MIT-BIH Normal Sinus Rhythm Database (18 subjects
+with no significant arrhythmias, 437 recording-hours) raises 25 candidate
+episodes, of which 16 survive vetting: 0.9 vetted candidates per patient-day.
+Fifteen of the 18 subjects produce no vetted candidate at all, and a single
+subject accounts for 14 of the 16.
+
+```
+./scripts/download_nsrdb.sh
+uv run python -m heartscreen.screening --data-dir data/nsrdb --out-dir results/screening_nsrdb
+```
+
 ## Component timings
 
 | Measurement | Value | Command |
