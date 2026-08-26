@@ -92,9 +92,15 @@ def vet(sqi: dict[str, float], rr: dict[str, float], window_s: float) -> bool:
 
 
 def sliding_probs(eval_step, params, signal: np.ndarray, cfg: Config, stride: int):
-    """Softmax probabilities for every stride-spaced window of a conditioned signal."""
+    """Softmax probabilities for every stride-spaced full window of a conditioned signal.
+
+    The tail shorter than one window is not scored; recordings shorter than one
+    window yield no windows at all.
+    """
     length = cfg.window
-    starts = np.arange(0, max(len(signal) - length, 0) + 1, stride)
+    if len(signal) < length:
+        return np.zeros(0, np.int64), np.zeros((0, 4), np.float32)
+    starts = np.arange(0, len(signal) - length + 1, stride)
     probs = np.zeros((len(starts), 4), np.float32)
     bs = cfg.batch_size
     mask = np.ones((bs, length), np.float32)
@@ -112,7 +118,7 @@ def sliding_probs(eval_step, params, signal: np.ndarray, cfg: Config, stride: in
     return starts, probs
 
 
-def find_episodes(record: str, starts, probs, stride: int, threshold: float) -> list[Episode]:
+def find_episodes(record: str, starts, probs, window: int, threshold: float) -> list[Episode]:
     """Merge consecutive above-threshold AF windows into candidate episodes."""
     hot = probs[:, AF_CLASS] >= threshold
     episodes = []
@@ -129,7 +135,7 @@ def find_episodes(record: str, starts, probs, stride: int, threshold: float) -> 
             Episode(
                 record=record,
                 start_s=starts[i] / FS,
-                end_s=(starts[j] + stride) / FS,
+                end_s=(starts[j] + window) / FS,
                 mean_p_af=float(p.mean()),
                 max_p_af=float(p.max()),
                 n_windows=j - i + 1,
@@ -171,7 +177,7 @@ def screen_record(
     if intervals:
         windows["af_frac"] = [af_fraction(intervals, s, s + cfg.window) for s in starts]
 
-    episodes = find_episodes(name, starts, probs, stride, threshold)
+    episodes = find_episodes(name, starts, probs, cfg.window, threshold)
     rows = []
     for ep in episodes:
         mid = int((ep.start_s + ep.end_s) / 2 * FS)
@@ -291,8 +297,8 @@ def plot_top_candidates(data_dir: Path, episodes: pd.DataFrame, path: Path, k: i
             fontsize=8,
         )
         ax.set_title(
-            f"p_af {ep['mean_p_af']:.2f}  cv_rr {ep['cv_rr']:.2f}  "
-            f"beats {ep['beats']:.0f}  vet {'pass' if ep['vet_pass'] else 'fail'}",
+            f"AF probability {ep['mean_p_af']:.2f}  RR variation {ep['cv_rr']:.2f}  "
+            f"{ep['beats']:.0f} beats  vetting {'passed' if ep['vet_pass'] else 'failed'}",
             fontsize=8,
             loc="left",
         )

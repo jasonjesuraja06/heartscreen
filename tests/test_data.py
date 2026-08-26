@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from heartscreen.data import LABEL_TO_INDEX, load_reference, load_signal
 from tests.conftest import DATA_DIR, requires_data
@@ -9,7 +10,8 @@ def test_label_parsing(tmp_path):
     (tmp_path / "training2017" / "REFERENCE.csv").write_text(
         "A00001,N\nA00002,A\nA00003,O\nA00004,~\n"
     )
-    records, labels = load_reference(tmp_path)
+    with pytest.warns(UserWarning, match="REFERENCE-v3"):
+        records, labels = load_reference(tmp_path)
     assert records == ["A00001", "A00002", "A00003", "A00004"]
     assert labels.tolist() == [0, 1, 2, 3]
     assert labels.dtype == np.int32

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +19,8 @@ def load_reference(data_dir: str | Path) -> tuple[list[str], np.ndarray]:
     """Return record names and integer labels, preferring the revised v3 reference."""
     data_dir = Path(data_dir)
     v3 = data_dir / "REFERENCE-v3.csv"
+    if not v3.exists():
+        warnings.warn("REFERENCE-v3.csv not found, using original challenge labels", stacklevel=2)
     path = v3 if v3.exists() else data_dir / "training2017" / "REFERENCE.csv"
     ref = pd.read_csv(path, header=None, names=["record", "label"])
     labels = ref["label"].map(LABEL_TO_INDEX).to_numpy(np.int32)

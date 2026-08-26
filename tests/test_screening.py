@@ -36,15 +36,26 @@ def test_find_episodes_merges_consecutive_windows():
     starts = np.arange(5) * 100
     probs = np.zeros((5, 4), np.float32)
     probs[:, 1] = [0.9, 0.8, 0.2, 0.7, 0.6]
-    episodes = find_episodes("rec", starts, probs, stride=100, threshold=0.5)
+    episodes = find_episodes("rec", starts, probs, window=250, threshold=0.5)
     assert len(episodes) == 2
     first = episodes[0]
     assert isinstance(first, Episode)
     assert first.n_windows == 2
     assert first.start_s == 0
-    assert first.end_s == 200 / FS
+    # The episode extends to the end of the last hot window, not its start.
+    assert first.end_s == (100 + 250) / FS
     assert np.isclose(first.mean_p_af, 0.85)
     assert episodes[1].n_windows == 2
+
+
+def test_sliding_probs_short_recording_yields_no_windows():
+    from heartscreen.screening import sliding_probs
+    from heartscreen.train import Config
+
+    cfg = Config(window_seconds=1, batch_size=4)
+    starts, probs = sliding_probs(None, None, np.zeros(200, np.float32), cfg, stride=100)
+    assert len(starts) == 0
+    assert probs.shape == (0, 4)
 
 
 def test_window_sqi_flags_flatline():
