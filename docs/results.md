@@ -1,7 +1,10 @@
 # Results
 
 All numbers were produced by the commands shown, on an Apple M4 Pro (14-core
-CPU, 48 GB RAM, no GPU, JAX CPU backend), with seed 42.
+CPU, 48 GB RAM, no GPU, JAX CPU backend), with seed 42. The raw artifacts
+behind every table (per-fold CV summaries, screening run outputs and logs,
+the NSRDB cohort, the baseline, timing runs, and the trained parameters) are
+attached to release v1.0.0 on GitHub.
 
 ## Cross-validation
 
