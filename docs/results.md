@@ -121,6 +121,15 @@ size. The classifier also never saw Holter data in training: it was fit on
 300 Hz AliveCor snippets and applied to 128 Hz telemetry resampled up, and
 the numbers absorb that mismatch.
 
+The funnel below reads each stage count back out of `results/screening/`, so
+it reports the same run as the table above:
+
+```
+uv run python scripts/dataset_figures.py --figures funnel
+```
+
+![screening funnel](figures/screening_funnel.png)
+
 Three top-ranked candidates and, in the last panel, the highest-scoring
 episode vetting rejected (QRS-band power ratio 0.296 against a 0.30 gate):
 

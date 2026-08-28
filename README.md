@@ -51,6 +51,12 @@ low-prevalence population, which is what the healthy-cohort row measures.
 Full tables, figures, and reproduction commands:
 [docs/results.md](docs/results.md).
 
+Where the reduction happens, stage by stage, with the count kept at each step.
+The sensitivity and specificity in the last band are measured on this
+AF-enriched cohort and do not transfer to a screening population.
+
+![screening funnel](docs/figures/screening_funnel.png)
+
 Top-ranked candidates from the screening run with detected R peaks. The last
 panel is the highest-scoring episode that vetting rejected: the model scored
 it 1.00, but its QRS-band power ratio of 0.296 fell below the 0.30
@@ -115,7 +121,7 @@ heartscreen/
   screening.py       sliding-window inference, vetting, candidate ranking
 configs/             default and smoke configurations
 docs/                design rationale, results, figures
-scripts/             dataset downloads, dataset figures, jit benchmark, baseline
+scripts/             dataset downloads, dataset and funnel figures, jit benchmark, baseline
 tests/               unit tests; data-dependent tests skip without data
 ```
 
