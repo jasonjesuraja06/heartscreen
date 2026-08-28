@@ -5,7 +5,7 @@ import time
 import jax
 import numpy as np
 
-from heartscreen.train import Config, class_weights, create_state, make_steps
+from heartscreen.train import Config, build_model, class_weights, create_state, make_steps
 
 
 def time_step(step, state, batch, repeats):
@@ -25,8 +25,6 @@ def main() -> None:
     mask = np.ones((cfg.batch_size, cfg.window), np.float32)
     y = rng.integers(0, 4, cfg.batch_size).astype(np.int32)
     weights = class_weights(y)
-
-    from heartscreen.train import build_model
 
     model = build_model(cfg)
     state = create_state(cfg, model, steps_per_epoch=100)

@@ -1,6 +1,6 @@
 import numpy as np
 
-from heartscreen.evaluate import challenge_f1, confusion
+from heartscreen.evaluate import challenge_f1, challenge_score, confusion
 from heartscreen.train import Config, class_weights, train_fold
 
 
@@ -54,8 +54,7 @@ def test_train_fold_learns_synthetic(tmp_path):
 
     train_signals, y_train = make(64)
     val_signals, y_val = make(32)
-    metric = lambda yt, yp: challenge_f1(yt, yp)[0]  # noqa: E731
-    result = train_fold(cfg, train_signals, y_train, val_signals, y_val, tmp_path, metric)
+    result = train_fold(cfg, train_signals, y_train, val_signals, y_val, tmp_path, challenge_score)
     assert (tmp_path / "log.csv").exists()
     assert (tmp_path / "params.msgpack").exists()
     assert result["val_logits"].shape == (32, 4)

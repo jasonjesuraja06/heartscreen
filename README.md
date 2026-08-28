@@ -14,6 +14,20 @@ the cheap first tier of a screening stack. The model scans a long recording
 window by window, R-peak and signal-quality checks vet whatever it flags,
 and the survivors reach a human as a ranked candidate list.
 
+```mermaid
+flowchart LR
+  A["long recording<br/>resampled to 300 Hz"] --> B["bandpass<br/>0.5 to 40 Hz"]
+  B --> C["30 s windows<br/>15 s stride"]
+  C --> D["residual 1D CNN<br/>821k params, jit"]
+  D -->|every window| E["merge runs of<br/>p(AF) at or above 0.5"]
+  E -->|candidates only| F["R-peak and<br/>signal-quality vetting"]
+  F --> G["ranked<br/>candidate list"]
+```
+
+Why each component is built this way, with the tradeoffs behind the filter
+band, window length, class weighting, and model size, is in
+[docs/design.md](docs/design.md).
+
 ## Results
 
 Stratified 5-fold cross-validation on the 8,528-record public training set,
@@ -34,23 +48,26 @@ set, a protocol not directly comparable to cross-validation; the baseline row
 shows what the screening pipeline's own hand-built rhythm features achieve
 under the identical protocol. Details in [docs/results.md](docs/results.md).
 
-Screening the MIT-BIH Long-Term AF Database with the deployment model, on
-the same CPU:
+Screening the MIT-BIH Long-Term AF Database with the model retrained on all
+8,528 records, on the same CPU:
 
 | Metric | Value |
 |---|---|
 | Recording-hours screened | 1,961 (84 Holter recordings) |
 | End-to-end wall clock | 15.3 min (127.8 recording-hours/min) |
-| Window-level sensitivity / specificity | 0.921 / 0.963 |
+| Window-level sensitivity / specificity / PPV | 0.921 / 0.963 / 0.965 |
 | Windows scored | 470,460 (52.7% annotated AF) |
 | Healthy-cohort false alarms (NSRDB, 18 subjects) | 0.9 vetted candidates per patient-day |
 
-PPV is 0.965, but the cohort is AF-enriched, so it does not transfer to
-low-prevalence populations. Full tables, figures, and reproduction commands:
+The PPV holds only because this cohort is AF-enriched; it would fall in a
+low-prevalence population, which is what the healthy-cohort row measures.
+Full tables, figures, and reproduction commands:
 [docs/results.md](docs/results.md).
 
-Top-ranked candidate episodes from the screening run, with detected R-peaks
-and per-episode vetting evidence:
+Top-ranked candidates from the screening run with detected R peaks. The last
+panel is the highest-scoring episode that vetting rejected: the model scored
+it 1.00, but its QRS-band power ratio of 0.296 fell below the 0.30
+signal-quality gate.
 
 ![top screening candidates](docs/figures/top_candidates.png)
 
@@ -61,6 +78,7 @@ interpreter and locked dependencies.
 
 ```
 uv sync
+uv run pytest -q                                     # 27 tests, no data needed
 ./scripts/download_cinc2017.sh
 uv run python -m heartscreen.evaluate --smoke        # ~10 s end-to-end check
 uv run python -m heartscreen.evaluate                # full 5-fold CV, hours
@@ -86,18 +104,15 @@ heartscreen/
   screening.py       sliding-window inference, vetting, candidate ranking
 configs/             default and smoke configurations
 docs/                design rationale, results, figures
-scripts/             dataset downloads, dataset figures, jit benchmark
+scripts/             dataset downloads, dataset figures, jit benchmark, baseline
 tests/               unit tests; data-dependent tests skip without data
 ```
 
 ## Evaluation protocol and limitations
 
-The CinC 2017 hidden test set is not public, so all classifier numbers are
-stratified 5-fold cross-validation on the public training set with a fixed
-seed; published hidden-test scores from challenge entries are cited in
-docs/results.md as context and are not directly comparable. Each fold's
-final-epoch model is evaluated, with no early stopping or model selection on
-the validation fold. Folds split records; patient identities are not
+All classifier numbers are cross-validation on the public training set with a
+fixed seed. Each fold's final-epoch model is evaluated, with no early
+stopping or model selection on the validation fold. Folds split records; patient identities are not
 published for this dataset, so patient-level splitting is not possible.
 Screening agreement on LTAF is measured across an acquisition mismatch the
 model never saw in training (128 Hz Holter telemetry resampled to 300 Hz)

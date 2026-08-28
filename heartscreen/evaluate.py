@@ -28,6 +28,10 @@ def challenge_f1(y_true: np.ndarray, y_pred: np.ndarray) -> tuple[float, dict[st
     return (per_class["N"] + per_class["A"] + per_class["O"]) / 3, per_class
 
 
+def challenge_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    return challenge_f1(y_true, y_pred)[0]
+
+
 def confusion(y_true: np.ndarray, y_pred: np.ndarray, num_classes: int = 4) -> np.ndarray:
     matrix = np.zeros((num_classes, num_classes), np.int64)
     for t, p in zip(y_true, y_pred, strict=True):
@@ -80,8 +84,6 @@ def run_cv(cfg: Config) -> dict:
 
     out_dir = Path(cfg.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    metric = lambda yt, yp: challenge_f1(yt, yp)[0]  # noqa: E731
-
     skf = StratifiedKFold(n_splits=cfg.folds, shuffle=True, random_state=cfg.seed)
     fold_scores, fold_per_class = [], []
     pooled_true, pooled_pred = [], []
@@ -95,7 +97,7 @@ def run_cv(cfg: Config) -> dict:
             [dataset.signal(i) for i in va_idx],
             dataset.labels[va_idx],
             out_dir / f"fold{k}",
-            metric,
+            challenge_score,
         )
         y_true = dataset.labels[va_idx]
         y_pred = result["val_logits"].argmax(1)
@@ -136,10 +138,15 @@ def run_cv(cfg: Config) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/default.yaml")
-    parser.add_argument("--smoke", action="store_true", help="run the reduced smoke configuration")
+    parser.add_argument(
+        "--smoke",
+        action="store_const",
+        const="configs/smoke.yaml",
+        dest="config",
+        help="shorthand for --config configs/smoke.yaml",
+    )
     args = parser.parse_args()
-    cfg = load_config("configs/smoke.yaml" if args.smoke else args.config)
-    run_cv(cfg)
+    run_cv(load_config(args.config))
 
 
 if __name__ == "__main__":

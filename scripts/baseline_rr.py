@@ -43,12 +43,13 @@ def extract_features(dataset: CachedDataset) -> pd.DataFrame:
 
 
 def main() -> None:
-    dataset = CachedDataset("data/cache/cinc2017.npz")
+    # The cached feature table is enough to rerun the fit, so the signal cache
+    # is only opened when the features have to be extracted.
     if CACHE.exists():
         features = pd.read_csv(CACHE)
     else:
         start = time.perf_counter()
-        features = extract_features(dataset)
+        features = extract_features(CachedDataset("data/cache/cinc2017.npz"))
         CACHE.parent.mkdir(parents=True, exist_ok=True)
         features.to_csv(CACHE, index=False)
         print(f"features extracted in {time.perf_counter() - start:.0f}s")

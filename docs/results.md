@@ -2,9 +2,12 @@
 
 All numbers were produced by the commands shown, on an Apple M4 Pro (14-core
 CPU, 48 GB RAM, no GPU, JAX CPU backend), with seed 42. The raw artifacts
-behind every table (per-fold CV summaries, screening run outputs and logs,
-the NSRDB cohort, the baseline, timing runs, and the trained parameters) are
-attached to release v1.0.0 on GitHub.
+behind the cross-validation, screening, and cohort tables (per-fold logs and
+summaries, screening outputs and run logs, the baseline feature table, and
+the trained parameters) are attached to
+[release v1.0.0](https://github.com/jasonjesuraja06/heartscreen/releases/tag/v1.0.0).
+The component timings at the end are stdout measurements, reproduced by the
+commands beside them.
 
 ## Cross-validation
 
@@ -16,6 +19,7 @@ best-epoch selection touches the validation fold.
 
 ```
 uv run python -m heartscreen.evaluate --config configs/default.yaml
+cp results/cv/confusion.png docs/figures/confusion_cv.png
 ```
 
 | Fold | Challenge F1 | F1 N | F1 A | F1 O | F1 ~ |
@@ -92,6 +96,7 @@ recipe) scans 84 Holter recordings of 6.1 to 26.4 hours (mean 23.3, median
 ```
 uv run python -m heartscreen.train --config configs/default.yaml
 uv run python -m heartscreen.screening
+cp results/screening/top_candidates.png docs/figures/top_candidates.png
 ```
 
 | Metric | Value |
@@ -115,6 +120,9 @@ which correlates the 470,460 window scores and shrinks the effective sample
 size. The classifier also never saw Holter data in training: it was fit on
 300 Hz AliveCor snippets and applied to 128 Hz telemetry resampled up, and
 the numbers absorb that mismatch.
+
+Three top-ranked candidates and, in the last panel, the highest-scoring
+episode vetting rejected (QRS-band power ratio 0.296 against a 0.30 gate):
 
 ![top candidates](figures/top_candidates.png)
 

@@ -1,9 +1,13 @@
 [project]
 name = "heartscreen"
-version = "0.1.0"
+version = "1.0.0"
 description = "Arrhythmia discovery engine for single-lead wearable ECG"
+readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
+authors = [{ name = "Jason Jesuraja" }]
+keywords = ["ecg", "arrhythmia", "atrial-fibrillation", "jax", "flax"]
+
 dependencies = [
     "jax>=0.6",
     "flax>=0.10",
@@ -16,6 +20,9 @@ dependencies = [
     "matplotlib>=3.9",
     "pyyaml>=6.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/jasonjesuraja06/heartscreen"
 
 [dependency-groups]
 dev = [

@@ -12,6 +12,10 @@ if [ ! -f "$dest/RECORDS" ]; then
         "https://physionet.org/content/nsrdb/get-zip/1.0.0/"
     unzip -q -o "$dest/nsrdb.zip" -d "$dest"
     inner="$(find "$dest" -maxdepth 2 -name RECORDS -exec dirname {} \; | head -1)"
+    if [ -z "$inner" ]; then
+        echo "RECORDS not found under $dest after unzip" >&2
+        exit 1
+    fi
     if [ "$inner" != "$dest" ]; then
         mv "$inner"/* "$dest/"
         rmdir "$inner" 2>/dev/null || true

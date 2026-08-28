@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import csv
 import dataclasses
 import time
@@ -15,6 +16,7 @@ import yaml
 from flax import serialization
 from flax.training.train_state import TrainState
 
+from heartscreen.data import CachedDataset, build_cache
 from heartscreen.models import ECGResNet
 from heartscreen.preprocessing import FS, fixed_window, make_batches
 
@@ -27,7 +29,7 @@ class Config:
     out_dir: str = "results/cv"
     window_seconds: int = 30
     batch_size: int = 64
-    epochs: int = 30
+    epochs: int = 60
     lr: float = 3e-3
     weight_decay: float = 1e-4
     warmup_epochs: int = 2
@@ -208,11 +210,7 @@ def load_params(cfg: Config, path: str | Path):
 
 def main() -> None:
     """Train the deployment model on every record for use by the screening pipeline."""
-    import argparse
-
-    from heartscreen.data import CachedDataset, build_cache
-
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=main.__doc__)
     parser.add_argument("--config", default="configs/default.yaml")
     parser.add_argument("--out-dir", default="results/full")
     args = parser.parse_args()

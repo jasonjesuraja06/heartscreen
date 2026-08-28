@@ -19,11 +19,11 @@ def test_output_shape():
     assert model.apply({"params": params}, x, mask).shape == (3, 4)
 
 
-def test_parameter_count_under_budget():
+def test_parameter_count_matches_documented():
+    # The README and design doc quote this figure, so pin it rather than a band.
     model = ECGResNet()
     params = init_params(model, length=9000)
-    count = sum(p.size for p in jax.tree.leaves(params))
-    assert 100_000 < count < 1_000_000
+    assert sum(p.size for p in jax.tree.leaves(params)) == 821_348
 
 
 def test_seed_determinism():

@@ -14,14 +14,15 @@ import wfdb
 from scipy.signal import sosfiltfilt
 from wfdb import processing
 
+from heartscreen.data import LABEL_TO_INDEX
 from heartscreen.preprocessing import FS, bandpass_sos, resample_to_fs
 from heartscreen.train import Config, build_model, load_config, load_params, make_steps
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-AF_CLASS = 1
-NOISE_CLASS = 3
+AF_CLASS = LABEL_TO_INDEX["A"]
+NOISE_CLASS = LABEL_TO_INDEX["~"]
 AF_RHYTHMS = {"(AFIB", "(AFL"}
 
 
@@ -56,7 +57,7 @@ def af_fraction(intervals: list[tuple[int, int, str]], start: int, end: int) -> 
 
 
 def window_sqi(window: np.ndarray) -> dict[str, float]:
-    """Cheap per-window quality indices computed on the conditioned signal."""
+    """Cheap per-window quality indices for a bandpassed window, amplitude untouched."""
     diffs = np.abs(np.diff(window))
     flatline = float(np.mean(diffs < 1e-4))
     spectrum = np.abs(np.fft.rfft(window)) ** 2
@@ -199,6 +200,48 @@ def screen_record(
     return windows, pd.DataFrame(rows), signal
 
 
+def plot_top_candidates(data_dir: Path, episodes: pd.DataFrame, path: Path, k: int = 4) -> None:
+    """Plot a 10 s excerpt of each top-ranked episode with detected R peaks.
+
+    The last panel is the highest-scoring candidate that vetting rejected, so
+    the figure shows what the vetting stage removes and not only what it keeps.
+    """
+    passed = episodes[episodes["vet_pass"]].head(k - 1)
+    rejected = episodes[~episodes["vet_pass"]].head(1)
+    top = pd.concat([passed, rejected]) if len(rejected) else episodes.head(k)
+    fig, axes = plt.subplots(len(top), 1, figsize=(9, 1.6 * len(top)), sharex=True)
+    axes = np.atleast_1d(axes)
+    for ax, (_, ep) in zip(axes, top.iterrows(), strict=True):
+        header = wfdb.rdheader(str(data_dir / ep["record"]))
+        start = int(ep["start_s"] * header.fs)
+        stop = min(start + 10 * header.fs, header.sig_len)
+        rec = wfdb.rdrecord(str(data_dir / ep["record"]), channels=[0], sampfrom=start, sampto=stop)
+        raw = np.nan_to_num(rec.p_signal[:, 0], nan=0.0)
+        signal = sosfiltfilt(bandpass_sos(), resample_to_fs(raw, header.fs).astype(np.float64))
+        t = np.arange(len(signal)) / FS
+        ax.plot(t, signal, lw=0.6, color="#20415e")
+        peaks = processing.xqrs_detect(signal, fs=FS, verbose=False)
+        ax.plot(t[peaks], signal[peaks], "r.", ms=4)
+        ax.set_yticks([])
+        ax.set_ylabel(
+            f"{ep['record']}\n{ep['start_s'] / 3600:.1f} h",
+            rotation=0,
+            ha="right",
+            va="center",
+            fontsize=8,
+        )
+        ax.set_title(
+            f"AF probability {ep['mean_p_af']:.2f}  RR variation {ep['cv_rr']:.2f}  "
+            f"{ep['beats']:.0f} beats  vetting {'passed' if ep['vet_pass'] else 'failed'}",
+            fontsize=8,
+            loc="left",
+        )
+    axes[-1].set_xlabel("time (s)")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/default.yaml")
@@ -216,7 +259,7 @@ def main() -> None:
 
     data_dir = Path(args.data_dir)
     names = [n for n in (data_dir / "RECORDS").read_text().split() if n]
-    if args.limit:
+    if args.limit is not None:
         names = names[: args.limit]
 
     out_dir = Path(args.out_dir)
@@ -270,42 +313,6 @@ def main() -> None:
             f"(n={len(annotated)}): sensitivity {tp / max(tp + fn, 1):.3f}, "
             f"specificity {tn / max(tn + fp, 1):.3f}, ppv {tp / max(tp + fp, 1):.3f}"
         )
-
-
-def plot_top_candidates(data_dir: Path, episodes: pd.DataFrame, path: Path, k: int = 10) -> None:
-    """Plot a 10 s excerpt of each top-ranked episode with detected R peaks."""
-    top = episodes.head(k)
-    fig, axes = plt.subplots(len(top), 1, figsize=(9, 1.6 * len(top)), sharex=True)
-    axes = np.atleast_1d(axes)
-    for ax, (_, ep) in zip(axes, top.iterrows(), strict=True):
-        header = wfdb.rdheader(str(data_dir / ep["record"]))
-        start = int(ep["start_s"] * header.fs)
-        stop = min(start + 10 * header.fs, header.sig_len)
-        rec = wfdb.rdrecord(str(data_dir / ep["record"]), channels=[0], sampfrom=start, sampto=stop)
-        raw = np.nan_to_num(rec.p_signal[:, 0], nan=0.0)
-        signal = sosfiltfilt(bandpass_sos(), resample_to_fs(raw, header.fs).astype(np.float64))
-        t = np.arange(len(signal)) / FS
-        ax.plot(t, signal, lw=0.6, color="#20415e")
-        peaks = processing.xqrs_detect(signal, fs=FS, verbose=False)
-        ax.plot(t[peaks], signal[peaks], "r.", ms=4)
-        ax.set_yticks([])
-        ax.set_ylabel(
-            f"{ep['record']}\n{ep['start_s'] / 3600:.1f} h",
-            rotation=0,
-            ha="right",
-            va="center",
-            fontsize=8,
-        )
-        ax.set_title(
-            f"AF probability {ep['mean_p_af']:.2f}  RR variation {ep['cv_rr']:.2f}  "
-            f"{ep['beats']:.0f} beats  vetting {'passed' if ep['vet_pass'] else 'failed'}",
-            fontsize=8,
-            loc="left",
-        )
-    axes[-1].set_xlabel("time (s)")
-    fig.tight_layout()
-    fig.savefig(path, dpi=150)
-    plt.close(fig)
 
 
 if __name__ == "__main__":
