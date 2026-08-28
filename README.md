@@ -24,7 +24,7 @@ protocol notes below.
 
 | Metric | Value |
 |---|---|
-| Mean CV challenge F1 | 0.827 +/- 0.008 |
+| Mean CV challenge F1 | 0.8271 +/- 0.0084 |
 | Per-class F1, Normal / AF / Other / Noisy | 0.903 / 0.810 / 0.768 / 0.614 |
 | RR-feature logistic regression baseline | 0.547 +/- 0.022 |
 | Model size | 821,348 parameters |
