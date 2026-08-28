@@ -2,31 +2,18 @@
 
 [![ci](https://github.com/jasonjesuraja06/heartscreen/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonjesuraja06/heartscreen/actions/workflows/ci.yml)
 
+- **0.8271 +/- 0.0084** mean cross-validated challenge F1 over 8,528 CinC 2017 records
+- **1,961 recording-hours screened in 15.3 minutes** on an M4 Pro CPU, no GPU
+- **0.921 sensitivity, 0.963 specificity** at window level on MIT-BIH Long-Term AF
+
+Raw run artifacts behind these numbers (per-fold logs and summaries, screening
+outputs, baseline feature table, trained parameters) are attached to
+[release v1.0.0](https://github.com/jasonjesuraja06/heartscreen/releases/tag/v1.0.0).
+Full tables and reproduction commands: [docs/results.md](docs/results.md).
+
 Arrhythmia discovery engine for single-lead wearable ECG: a JAX/Flax residual
 CNN classifier for the PhysioNet/CinC 2017 task, wrapped in a screening
 pipeline that ranks candidate AF episodes in multi-hour recordings.
-
-Atrial fibrillation is intermittent and often asymptomatic, so it is missed by
-spot checks and found by long-duration monitoring, which produces far more
-signal than anyone reads by hand. HeartScreen trains a compact
-821k-parameter classifier on labeled 30 s single-lead records and makes it
-the cheap first tier of a screening stack. The model scans a long recording
-window by window, R-peak and signal-quality checks vet whatever it flags,
-and the survivors reach a human as a ranked candidate list.
-
-```mermaid
-flowchart LR
-  A["long recording<br/>resampled to 300 Hz"] --> B["bandpass<br/>0.5 to 40 Hz"]
-  B --> C["30 s windows<br/>15 s stride"]
-  C --> D["residual 1D CNN<br/>821k params, jit"]
-  D -->|every window| E["merge runs of<br/>p(AF) at or above 0.5"]
-  E -->|candidates only| F["R-peak and<br/>signal-quality vetting"]
-  F --> G["ranked<br/>candidate list"]
-```
-
-Why each component is built this way, with the tradeoffs behind the filter
-band, window length, class weighting, and model size, is in
-[docs/design.md](docs/design.md).
 
 ## Results
 
@@ -70,6 +57,30 @@ it 1.00, but its QRS-band power ratio of 0.296 fell below the 0.30
 signal-quality gate.
 
 ![top screening candidates](docs/figures/top_candidates.png)
+
+## Pipeline
+
+Atrial fibrillation is intermittent and often asymptomatic, so it is missed by
+spot checks and found by long-duration monitoring, which produces far more
+signal than anyone reads by hand. HeartScreen trains a compact
+821k-parameter classifier on labeled 30 s single-lead records and makes it
+the cheap first tier of a screening stack. The model scans a long recording
+window by window, R-peak and signal-quality checks vet whatever it flags,
+and the survivors reach a human as a ranked candidate list.
+
+```mermaid
+flowchart LR
+  A["long recording<br/>resampled to 300 Hz"] --> B["bandpass<br/>0.5 to 40 Hz"]
+  B --> C["30 s windows<br/>15 s stride"]
+  C --> D["residual 1D CNN<br/>821k params, jit"]
+  D -->|every window| E["merge runs of<br/>p(AF) at or above 0.5"]
+  E -->|candidates only| F["R-peak and<br/>signal-quality vetting"]
+  F --> G["ranked<br/>candidate list"]
+```
+
+Why each component is built this way, with the tradeoffs behind the filter
+band, window length, class weighting, and model size, is in
+[docs/design.md](docs/design.md).
 
 ## Quickstart
 
