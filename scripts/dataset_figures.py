@@ -46,21 +46,62 @@ def dataset_figures() -> dict:
     seconds = lengths / FS
     counts = np.bincount(labels, minlength=4)
 
-    fig, ax = plt.subplots(figsize=(4.5, 3))
-    bars = ax.bar(LABELS, counts, color=STAGE_COLOR)
-    ax.bar_label(bars, [f"{c}\n{c / len(labels):.1%}" for c in counts], fontsize=8)
+    total = len(labels)
+    af = int(counts[LABEL_TO_INDEX["A"]])
+    normal = int(counts[LABEL_TO_INDEX["N"]])
+
+    # The AF bar is the one the whole project turns on, so it is colored apart
+    # from the rest and the title states its share rather than the axis names.
+    fig, ax = plt.subplots(figsize=(7.4, 3.6))
+    colors = [OUTPUT_COLOR if name == "A" else STAGE_COLOR for name in LABELS]
+    bars = ax.bar(LABELS, counts, color=colors)
+    ax.bar_label(bars, [f"{c:,}\n{c / total:.1%}" for c in counts], fontsize=9.5, weight="bold")
+    ax.set_xlabel("reference rhythm label (N normal, A atrial fibrillation, O other, ~ noisy)")
     ax.set_ylabel("records")
-    ax.set_ylim(0, counts.max() * 1.2)
-    fig.tight_layout()
-    fig.savefig(FIG_DIR / "class_distribution.png", dpi=150)
+    ax.set_ylim(0, counts.max() * 1.24)
+    ax.grid(True, axis="y", alpha=0.3)
+    ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    ax.set_title(
+        f"AF is {af / total:.1%} of the CinC 2017 training set: {af:,} of {total:,} records,"
+        f" {normal / af:.1f}x fewer than normal rhythm",
+        fontsize=12,
+        weight="bold",
+    )
+    fig.savefig(FIG_DIR / "class_distribution.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
-    fig, ax = plt.subplots(figsize=(4.5, 3))
-    ax.hist(seconds, bins=52, color=STAGE_COLOR)
-    ax.set_xlabel("record length (s)")
+    median_s = float(np.median(seconds))
+    near_median = float(np.mean(np.abs(seconds - median_s) <= 1.0))
+
+    fig, ax = plt.subplots(figsize=(7.4, 3.6))
+    heights, edges, _ = ax.hist(seconds, bins=52, color=STAGE_COLOR)
+    tallest = int(np.argmax(heights))
+    ax.annotate(
+        f"{int(heights[tallest]):,} records",
+        xy=((edges[tallest] + edges[tallest + 1]) / 2, heights[tallest]),
+        xytext=(0, 6),
+        textcoords="offset points",
+        ha="center",
+        fontsize=10,
+        weight="bold",
+        color=BAND_TEXT,
+    )
+    ax.set_xlabel("record length (seconds)")
     ax.set_ylabel("records")
-    fig.tight_layout()
-    fig.savefig(FIG_DIR / "length_histogram.png", dpi=150)
+    ax.set_ylim(0, heights.max() * 1.18)
+    ax.grid(True, axis="y", alpha=0.3)
+    ax.set_axisbelow(True)
+    for side in ("top", "right"):
+        ax.spines[side].set_visible(False)
+    ax.set_title(
+        f"{near_median:.0%} of records sit within 1 s of the {median_s:.0f} s median;"
+        f" the full range is {seconds.min():.0f} to {seconds.max():.0f} s",
+        fontsize=12,
+        weight="bold",
+    )
+    fig.savefig(FIG_DIR / "length_histogram.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     return {
