@@ -95,7 +95,7 @@ interpreter and locked dependencies.
 
 ```
 uv sync
-uv run pytest -q                                     # 27 tests, no data needed
+uv run pytest -q                                     # 25 tests pass without data, 2 need CinC
 ./scripts/download_cinc2017.sh
 uv run python -m heartscreen.evaluate --smoke        # ~10 s end-to-end check
 uv run python -m heartscreen.evaluate                # full 5-fold CV, hours
